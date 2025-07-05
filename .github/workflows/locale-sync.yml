@@ -76,7 +76,11 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-          # Create a new branch
+          # Use the current branch as the base
+          BASE_BRANCH="${{ github.ref_name }}"
+          echo "Using base branch: $BASE_BRANCH"
+
+          # Create a new branch from the base branch
           BRANCH_NAME="auto-locale-sync-$(date +%Y%m%d-%H%M%S)"
           git checkout -b "$BRANCH_NAME"
 
@@ -89,18 +93,19 @@ jobs:
 
           sleep 2
 
-          # Create PR using GitHub CLI
-          gh pr create --title "chore: automatic locale sync" --body "## Summary
+          # Create PR using GitHub CLI with explicit repository
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --title "chore: automatic locale sync" \
+            --base "$BASE_BRANCH" \
+            --head "$BRANCH_NAME" \
+            --body "## Summary
 
           Automatically generated locale updates from the weekly sync job.
 
           ## Changes
           - Updated frontend locale files
-          - Generated from latest translation sources
-
-          ## Test plan
-          - [ ] Verify locale files are properly formatted
-          - [ ] Test that translations load correctly in the frontend" --base dev --head "$BRANCH_NAME"
+          - Generated from latest translation sources" \
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
