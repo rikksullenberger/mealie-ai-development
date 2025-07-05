@@ -23,19 +23,22 @@ class LocaleData:
 
 
 LOCALE_DATA: dict[str, LocaleData] = {
-    "en-US": LocaleData(name="American English"),
-    "en-GB": LocaleData(name="British English"),
     "af-ZA": LocaleData(name="Afrikaans (Afrikaans)"),
     "ar-SA": LocaleData(name="العربية (Arabic)", dir="rtl"),
+    "bg-BG": LocaleData(name="Български (Bulgarian)"),
     "ca-ES": LocaleData(name="Català (Catalan)"),
     "cs-CZ": LocaleData(name="Čeština (Czech)"),
     "da-DK": LocaleData(name="Dansk (Danish)"),
     "de-DE": LocaleData(name="Deutsch (German)"),
     "el-GR": LocaleData(name="Ελληνικά (Greek)"),
+    "en-GB": LocaleData(name="British English"),
+    "en-US": LocaleData(name="American English"),
     "es-ES": LocaleData(name="Español (Spanish)"),
+    "et-EE": LocaleData(name="Eesti (Estonian)"),
     "fi-FI": LocaleData(name="Suomi (Finnish)"),
-    "fr-FR": LocaleData(name="Français (French)"),
     "fr-BE": LocaleData(name="Belge (Belgian)"),
+    "fr-CA": LocaleData(name="Français canadien (Canadian French)"),
+    "fr-FR": LocaleData(name="Français (French)"),
     "gl-ES": LocaleData(name="Galego (Galician)"),
     "he-IL": LocaleData(name="עברית (Hebrew)", dir="rtl"),
     "hr-HR": LocaleData(name="Hrvatski (Croatian)"),
@@ -53,6 +56,7 @@ LOCALE_DATA: dict[str, LocaleData] = {
     "pt-PT": LocaleData(name="Português (Portuguese)"),
     "ro-RO": LocaleData(name="Română (Romanian)"),
     "ru-RU": LocaleData(name="Pусский (Russian)"),
+    "sk-SK": LocaleData(name="Slovenčina (Slovak)"),
     "sl-SI": LocaleData(name="Slovenščina (Slovenian)"),
     "sr-SP": LocaleData(name="српски (Serbian)"),
     "sv-SE": LocaleData(name="Svenska (Swedish)"),
@@ -93,8 +97,8 @@ class CrowdinApi:
     project_id = "451976"
     api_key = API_KEY
 
-    def __init__(self, api_key: str):
-        api_key = api_key
+    def __init__(self, api_key: str | None):
+        self.api_key = api_key or API_KEY
 
     @property
     def headers(self) -> dict:
@@ -196,7 +200,7 @@ def inject_registration_validation_values():
 
 
 def generate_locales_ts_file():
-    api = CrowdinApi("")
+    api = CrowdinApi(None)
     models = api.get_languages()
     tmpl = Template(LOCALE_TEMPLATE)
     rendered = tmpl.render(locales=models)
