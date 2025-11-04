@@ -94,6 +94,12 @@ class RecipeController(BaseRecipeController):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorResponse.respond(message="Recipe already exists")
             )
+        elif thrownType == exceptions.RecursiveRecipe:
+            self.logger.error("Recursive Recipe Link Error on recipe controller action")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorResponse.respond(message=self.t("exceptions.recursive-recipe-link")),
+            )
         elif thrownType == exceptions.SlugError:
             self.logger.error("Failed to generate a valid slug from recipe name")
             raise HTTPException(
