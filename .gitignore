@@ -169,3 +169,11 @@ dev/code-generation/openapi.json
 .task/*
 .dev.env
 frontend/eslint.config.deprecated.js
+
+# Secrets
+.env
+*.env
+*.env.*
+*.key
+*.pem
+credentials*
