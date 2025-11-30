@@ -1,106 +1,144 @@
-[![Latest Release][latest-release-shield]][latest-release-url]
-[![Contributors][contributors-shield]][contributors-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![AGPL License][license-shield]][license-url]
-[![Docker Pulls][docker-pull]][docker-url]
-[![GHCR Pulls][ghcr-pulls]][ghcr-url]
+# Mealie with AI Image Generation
 
-<!-- PROJECT LOGO -->
-<br />
-<p align="center">
-  <a href="https://github.com/mealie-recipes/mealie">
-<svg style="width:100px;height:100px" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M8.1,13.34L3.91,9.16C2.35,7.59 2.35,5.06 3.91,3.5L10.93,10.5L8.1,13.34M13.41,13L20.29,19.88L18.88,21.29L12,14.41L5.12,21.29L3.71,19.88L13.36,10.22L13.16,10C12.38,9.23 12.38,7.97 13.16,7.19L17.5,2.82L18.43,3.74L15.19,7L16.15,7.94L19.39,4.69L20.31,5.61L17.06,8.85L18,9.81L21.26,6.56L22.18,7.5L17.81,11.84C17.03,12.62 15.77,12.62 15,11.84L14.78,11.64L13.41,13Z" />
-</svg>
-  </a>
+A fork of [Mealie](https://github.com/mealie-recipes/mealie) with enhanced AI capabilities for automatic recipe image generation.
 
-  <h3 align="center">Mealie</h3>
+## About This Fork
 
-  <p align="center">
-    A Place For All Your Recipes
-    <br />
-    <a href="https://docs.mealie.io/"><strong>Explore the docs »</strong></a>
-  <a href="https://github.com/mealie-recipes/mealie">
-  </a>
-    <br />
-    <a href="https://demo.mealie.io/">View Demo</a>
-    ·
-    <a href="https://github.com/mealie-recipes/mealie/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/mealie-recipes/mealie/pkgs/container/mealie">GitHub Container Registry</a>
-</p>
+This is a modified version of the excellent **Mealie** recipe management application, created by the talented team at [mealie-recipes](https://github.com/mealie-recipes). 
 
+### Acknowledgments
 
+**Huge thanks to the original Mealie developers** for creating such an outstanding open-source recipe manager! Their clean architecture, beautiful UI, and thoughtful design made it possible to add this AI image generation feature seamlessly. This fork builds upon their incredible work and wouldn't exist without their dedication to the project.
 
+### What's Different?
 
-[![Product Name Screen Shot][product-screenshot]](https://docs.mealie.io)
+This fork adds **AI-powered image generation** for recipes:
 
-# About The Project
+- **Automatic Image Creation**: When creating a recipe using AI, you can now optionally generate a professional food photography image using OpenAI's DALL-E 3
+- **One-Click Generation**: Simply check the "Generate Image" box when creating a recipe from an AI prompt
+- **High-Quality Images**: Images are generated at 1024x1024 resolution with professional food photography style
+- **Optional Feature**: Image generation is disabled by default to avoid unexpected API costs
 
-Mealie is a self hosted recipe manager, meal planner and shopping list with a RestAPI backend and a reactive frontend built in Vue for a pleasant user experience for the whole family. Easily add recipes into your database by providing the URL and Mealie will automatically import the relevant data, or add a family recipe with the UI editor. Mealie also provides an API for interactions from 3rd party applications.
+## Prerequisites
 
-- [Remember to join the Discord](https://discord.gg/QuStdQGSGK)!
-- [Documentation](https://docs.mealie.io/)
+- Docker and Docker Compose
+- **OpenAI API Key** (required for AI features)
+  - Without an API key, the AI recipe generation and image features will not be visible in the UI
+  - Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
 
+## Installation
 
-## Key Features
-- Recipe imports: Create recipes, by **importing from a URL** or entering data manually
-- Meal Planner: Use the **Meal Planner** to plan your what you'll cook for the next week
-- Shopping List: Put the necessary ingredients on your **Shopping List**, organised into sections of your local supermarket
-- Cookbooks: Group recipes into **Cookbooks** based on your own criteria
-- Docker: Easy **Docker** deployment
-- Localisation: **Translations** for 35+ languages
+### Using Docker Compose (Recommended)
 
-<!-- CONTRIBUTING -->
-## Contributing
+1. **Clone this repository:**
+   ```bash
+   git clone https://github.com/rikksullenber/mealie.git
+   cd mealie
+   ```
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**. If you're going to be working on the code-base, you'll want to use the nightly documentation to ensure you get the latest information.
+2. **Configure OpenAI API Key:**
+   
+   Edit `docker/docker-compose.yml` and add your OpenAI API key:
+   ```yaml
+   environment:
+     OPENAI_API_KEY: "your-openai-api-key-here"
+   ```
 
-- See the [Contributors Guide](https://nightly.mealie.io/contributors/developers-guide/code-contributions/) for help getting started.
-- We use [VSCode Dev Containers](https://code.visualstudio.com/docs/remote/containers) to make it easy for contributors to get started!
+3. **Build and run:**
+   ```bash
+   cd docker
+   docker compose up -d --build
+   ```
 
-If you are not a coder, you can still contribute financially. Financial contributions help me prioritize working on this project over others and helps me know that there is a real demand for project development.
+4. **Access the application:**
+   
+   Open your browser to `http://localhost:9091`
 
-<a href="https://www.buymeacoffee.com/haykot" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-green.png" alt="Buy Me A Coffee" style="height: 30px !important;width: 107px !important;" ></a>
+### Environment Variables
 
-### Translations
+Required environment variables for AI features:
 
-Translations can be a great way for **non-coders** to contribute to the project. We use [Crowdin](https://crowdin.com/project/mealie) to allow several contributors to work on translating Mealie. You can simply help by voting for your preferred translations, or even by completely translating Mealie into a new language.
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `OPENAI_API_KEY` | Your OpenAI API key | Yes (for AI features) |
+| `OPENAI_MODEL` | OpenAI model to use | No (defaults to `gpt-4o`) |
+| `OPENAI_ENABLE_IMAGE_SERVICES` | Enable image generation | No (defaults to `true`) |
 
-For more information, check out the translation page on the [contributor's guide](https://nightly.mealie.io/contributors/translating/).
+**Important:** If `OPENAI_API_KEY` is not set, the AI recipe generation menu option will be hidden from the UI.
 
-<!-- LICENSE -->
+## Usage
+
+### Creating a Recipe with AI Image Generation
+
+1. Navigate to **Create** → **Generate with AI**
+2. Enter your recipe description (e.g., "Creamy Italian Carbonara")
+3. **Check the "Generate Image" checkbox** to create an AI-generated image
+4. Click **Generate**
+5. The recipe will be created with an AI-generated food photography image
+
+### Cost Considerations
+
+- **Recipe Generation**: Uses GPT-4o (standard OpenAI pricing)
+- **Image Generation**: Uses DALL-E 3 (~$0.04-0.08 per image depending on quality settings)
+- Image generation is **optional** and disabled by default to prevent unexpected charges
+
+## Development
+
+### Building from Source
+
+```bash
+# Install dependencies
+task setup
+
+# Run backend
+task py
+
+# Run frontend (in separate terminal)
+task ui
+
+# Build Docker image
+task docker:build-from-package
+```
+
+### Running Tests
+
+```bash
+# Backend tests
+task py:test
+
+# Frontend tests
+task ui:test
+```
+
+## Changes from Original Mealie
+
+### Backend
+- **`mealie/schema/recipe/recipe.py`**: Added `include_image` field to `CreateRecipeAI`
+- **`mealie/services/openai/openai.py`**: Added `generate_image()` method using DALL-E 3
+- **`mealie/services/recipe/recipe_service.py`**: Added `generate_recipe_with_image()` method
+- **`mealie/routes/recipe/recipe_crud_routes.py`**: Updated AI recipe creation endpoint to handle image generation
+
+### Frontend
+- **`frontend/lib/api/user/recipes/recipe.ts`**: Updated API client to support `includeImage` parameter
+- **`frontend/pages/g/[groupSlug]/r/create/ai.vue`**: Added "Generate Image" checkbox to UI
+
+## Original Mealie Documentation
+
+For complete documentation about Mealie's features, configuration, and usage, please refer to:
+- [Official Mealie Documentation](https://docs.mealie.io/)
+- [Original Repository](https://github.com/mealie-recipes/mealie)
+
 ## License
-Distributed under the AGPL License. See `LICENSE` for more information.
 
+This project maintains the same license as the original Mealie project (AGPL-3.0).
 
-## Sponsors
+## Support the Original Project
 
-Huge thanks to all the sponsors of this project on [Github Sponsors](https://github.com/sponsors/hay-kot) and Buy Me a Coffee. Without you, this project would surely not be possible.
+If you find this fork useful, please consider:
+- ⭐ Starring the [original Mealie repository](https://github.com/mealie-recipes/mealie)
+- 💰 [Sponsoring the Mealie developers](https://github.com/sponsors/hay-kot)
+- 🐛 Contributing bug reports and features to the original project
 
-Thanks to Depot for providing build instances for our Docker image builds.
+## Disclaimer
 
-[![Built with Depot](https://depot.dev/badges/built-with-depot.svg)](https://depot.dev?utm_source=Mealie)
-
-
-
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/mealie-recipes/mealie.svg?style=flat-square
-[docker-pull]: https://img.shields.io/docker/pulls/hkotel/mealie?style=flat-square
-[docker-url]: https://hub.docker.com/r/hkotel/mealie
-[ghcr-pulls]: https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fipitio.github.io%2Fbackage%2Fmealie-recipes%2Fmealie%2Fmealie.json&query=%24.downloads&style=flat-square&label=ghcr%20pulls
-[ghcr-url]: https://github.com/mealie-recipes/mealie/pkgs/container/mealie
-[contributors-url]: https://github.com/mealie-recipes/mealie/graphs/contributors
-[stars-shield]: https://img.shields.io/github/stars/mealie-recipes/mealie.svg?style=flat-square
-[stars-url]: https://github.com/mealie-recipes/mealie/stargazers
-[issues-shield]: https://img.shields.io/github/issues/mealie-recipes/mealie.svg?style=flat-square
-[issues-url]: https://github.com/mealie-recipes/mealie/issues
-[latest-release-shield]: https://img.shields.io/github/v/release/mealie-recipes/mealie?style=flat-square&label=latest%20release
-[latest-release-url]: https://github.com/mealie-recipes/mealie/releases
-[license-shield]: https://img.shields.io/github/license/mealie-recipes/mealie.svg?style=flat-square
-[license-url]: https://github.com/mealie-recipes/mealie/blob/mealie-next/LICENSE
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/hay-kot
-[product-screenshot]: docs/docs/assets/img/home_screenshot.png
+This is an unofficial fork and is not affiliated with or endorsed by the official Mealie project. Use at your own risk, especially regarding OpenAI API costs.
