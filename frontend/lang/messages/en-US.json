@@ -450,7 +450,12 @@
     "create-manually": "Create a recipe manually",
     "make-recipe-image": "Make this the recipe image",
     "add-food": "Add Food",
-    "add-recipe": "Add Recipe"
+    "add-recipe": "Add Recipe",
+    "generate-with-ai": "Generate with AI",
+    "generate-with-ai-description": "Describe a dish or a recipe, and Mealie will generate it for you using AI.",
+    "describe-recipe-hint": "e.g. A spicy chicken curry with coconut milk",
+    "generate": "Generate",
+    "generating": "Generating..."
   },
   "page": {
     "404-page-not-found": "404 Page not found",

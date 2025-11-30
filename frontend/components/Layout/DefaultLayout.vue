@@ -135,6 +135,7 @@ export default defineNuxtComponent({
     });
 
     const showImageImport = computed(() => $appInfo.enableOpenaiImageServices);
+    const showAiGeneration = computed(() => $appInfo.enableOpenai);
     const languageDialog = ref<boolean>(false);
 
     const sidebar = ref<boolean>(false);
@@ -213,6 +214,15 @@ export default defineNuxtComponent({
         to: `/g/${groupSlug.value}/r/create/image`,
         restricted: true,
         hide: !showImageImport.value,
+      },
+      {
+        insertDivider: false,
+        icon: $globals.icons.robot,
+        title: i18n.t("new-recipe.generate-with-ai"),
+        subtitle: i18n.t("new-recipe.generate-with-ai-description"),
+        to: `/g/${groupSlug.value}/r/create/ai`,
+        restricted: true,
+        hide: !showAiGeneration.value,
       },
       {
         insertDivider: true,
