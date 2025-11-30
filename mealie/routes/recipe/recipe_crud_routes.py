@@ -33,6 +33,7 @@ from mealie.schema.make_dependable import make_dependable
 from mealie.schema.recipe import Recipe, ScrapeRecipe, ScrapeRecipeData
 from mealie.schema.recipe.recipe import (
     CreateRecipe,
+    CreateRecipeAI,
     CreateRecipeByUrlBulk,
     RecipeLastMade,
     RecipeSummary,
@@ -60,6 +61,7 @@ from mealie.services.recipe.recipe_data_service import (
     NotAnImageError,
     RecipeDataService,
 )
+from mealie.services.recipe.recipe_service import OpenAIRecipeService
 from mealie.services.scraper.recipe_bulk_scraper import RecipeBulkScraperService
 from mealie.services.scraper.scraped_extras import ScraperContext
 from mealie.services.scraper.scraper import create_from_html
@@ -241,6 +243,46 @@ class RecipeController(BaseRecipeController):
         )
 
         return recipe.slug
+
+    @router.post("/create/ai", status_code=201, response_model=str)
+    async def create_recipe_from_ai(self, data: CreateRecipeAI):
+        """Create a recipe from an AI prompt"""
+        if not self.settings.OPENAI_ENABLED:
+            raise HTTPException(
+                status_code=400,
+                detail=ErrorResponse.respond("OpenAI is not enabled"),
+            )
+
+        openai_recipe_service = OpenAIRecipeService(self.repos, self.user, self.household, self.translator)
+        try:
+            recipe, image_data = await openai_recipe_service.generate_recipe_with_image(data.prompt, include_image=data.include_image)
+            new_recipe = self.service.create_one(recipe)
+
+            if image_data:
+                data_service = RecipeDataService(new_recipe.id)
+                data_service.write_image(image_data, "webp")
+                self.service.group_recipes.update_image(new_recipe.slug, "webp")
+
+            self.publish_event(
+                event_type=EventTypes.recipe_created,
+                document_data=EventRecipeData(operation=EventOperation.create, recipe_slug=new_recipe.slug),
+                group_id=new_recipe.group_id,
+                household_id=new_recipe.household_id,
+                message=self.t(
+                    "notifications.generic-created-with-url",
+                    name=new_recipe.name,
+                    url=urls.recipe_url(self.group.slug, new_recipe.slug, self.settings.BASE_URL),
+                ),
+            )
+
+            return new_recipe.slug
+        except Exception as e:
+            self.logger.exception(e)
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse.respond(f"Failed to generate recipe: {e}"),
+            )
+
 
     # ==================================================================================================================
     # CRUD Operations

@@ -109,6 +109,11 @@ class CreateRecipeByUrlBulk(BaseModel):
     imports: list[CreateRecipeBulk]
 
 
+class CreateRecipeAI(BaseModel):
+    prompt: str
+    include_image: bool = False
+
+
 class CreateRecipe(MealieModel):
     name: str
 

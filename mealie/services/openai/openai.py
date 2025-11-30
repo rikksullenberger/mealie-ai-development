@@ -176,3 +176,33 @@ class OpenAIService(BaseService):
             return response.choices[0].message.content
         except Exception as e:
             raise Exception(f"OpenAI Request Failed. {e.__class__.__name__}: {e}") from e
+
+    async def generate_image(self, prompt: str) -> bytes | None:
+        """Generate an image using DALL-E 3"""
+        if not self.enable_image_services:
+            self.logger.warning("OpenAI image services are disabled")
+            return None
+
+        try:
+            client = self.get_client()
+            response = await client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+                response_format="b64_json",
+            )
+
+            if not response.data:
+                return None
+
+            image_data = response.data[0].b64_json
+            if not image_data:
+                return None
+
+            return base64.b64decode(image_data)
+
+        except Exception as e:
+            self.logger.error(f"Failed to generate image: {e}")
+            return None

@@ -38,6 +38,7 @@ const routes = {
   recipesCreateUrlBulk: `${prefix}/recipes/create/url/bulk`,
   recipesCreateFromZip: `${prefix}/recipes/create/zip`,
   recipesCreateFromImage: `${prefix}/recipes/create/image`,
+  recipesCreateFromAI: `${prefix}/recipes/create/ai`,
   recipesCreateFromHtmlOrJson: `${prefix}/recipes/create/html-or-json`,
   recipesCategory: `${prefix}/recipes/category`,
   recipesParseIngredient: `${prefix}/parser/ingredient`,
@@ -94,7 +95,7 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
   share: RecipeShareApi;
 
   constructor(requests: ApiRequestInstance) {
-    super(requests);
+    super(requests, routes.recipesBase, routes.recipesRecipeSlug);
 
     this.comments = new CommentsApi(requests);
     this.share = new RecipeShareApi(requests);
@@ -171,6 +172,10 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
     }
 
     return await this.requests.post<string>(apiRoute, formData);
+  }
+
+  async createOneFromAI(prompt: string, includeImage = false) {
+    return await this.requests.post<string>(routes.recipesCreateFromAI, { prompt, include_image: includeImage });
   }
 
   async parseIngredients(parser: Parser, ingredients: Array<string>) {
