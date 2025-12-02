@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # SSH credentials
-REMOTE_USER="rikksullenber"
-REMOTE_HOST="37.27.100.190"
+REMOTE_USER="your-login-id"
+REMOTE_HOST="your-ip-address"
 REMOTE_PASS='your-ssh-password-here'
 
 # Create deployment directory
