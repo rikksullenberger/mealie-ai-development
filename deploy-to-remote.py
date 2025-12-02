@@ -3,8 +3,8 @@ import paramiko
 import time
 
 # Server credentials
-hostname = "192.168.30.238"
-username = "rikksullenber"
+hostname = "192.168.1.2
+username = "your-user-id"
 password = "your-ssh-password-here"
 
 # Create SSH client
