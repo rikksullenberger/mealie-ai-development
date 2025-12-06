@@ -147,17 +147,26 @@ class RecipeBatchImageService(BaseService):
                         self.logger.debug(f"Skipping recipe {full_recipe.slug} - no edit permission")
                         return
 
-                    # Check if recipe has an image in DB
-                    if full_recipe.image:
-                        # Verify the file actually exists on disk
-                        data_service = RecipeDataService(full_recipe.id)
-                        has_files = any(f.is_file() for f in data_service.dir_image.iterdir())
-                        
-                        if has_files:
-                            self.logger.debug(f"Skipping recipe {full_recipe.slug} - already has image")
-                            return
-                        
-                        self.logger.info(f"Recipe {full_recipe.slug} has DB image but no files on disk. Generating new image.")
+                    # Verify if a valid image exists on disk
+                    # We check disk regardless of DB state to avoid overwrites and handle sync issues
+                    data_service = RecipeDataService(full_recipe.id)
+                    
+                    # Check for valid image files: exists, correct extension, size > 0 bytes
+                    valid_extensions = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+                    has_valid_image = False
+                    
+                    if data_service.dir_image.exists():
+                        for f in data_service.dir_image.iterdir():
+                            if f.is_file() and f.suffix.lower() in valid_extensions and f.stat().st_size > 0:
+                                has_valid_image = True
+                                break
+                    
+                    if has_valid_image:
+                        self.logger.debug(f"Skipping recipe {full_recipe.slug} - valid image exists on disk")
+                        return
+
+                    if full_recipe.image and not has_valid_image:
+                         self.logger.info(f"Recipe {full_recipe.slug} has DB image but no valid files on disk. Generating new image.")
 
                     # Build prompt from recipe data
                     prompt_parts = [f"A high quality, professional food photography shot of {full_recipe.name}."]
