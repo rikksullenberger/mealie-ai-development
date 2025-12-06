@@ -11,9 +11,10 @@ A fork of [Mealie](https://github.com/mealie-recipes/mealie) with enhanced AI ca
 
 ## Features
 
-- **AI Recipe Generation**: Generate complete recipes from simple descriptions using GPT-3.5-turbo
+- **AI Recipe Generation**: Generate complete recipes from simple descriptions using GPT-4o
 - **AI Image Generation**: Create professional food photography images using DALL-E 3
 - **Parse Ingredients**: Automatically parse and structure recipe ingredients
+- **Enhanced Security**: Hardened image with patched system libraries and `urllib3` updates
 - **One-Click Setup**: Simple Docker deployment with OpenAI API key
 
 ## Quick Start
@@ -30,7 +31,7 @@ docker run -d \
   -p 9099:9000 \
   -v mealie-data:/app/data \
   -e OPENAI_API_KEY="your-openai-api-key-here" \
-  -e OPENAI_MODEL="gpt-3.5-turbo" \
+  -e OPENAI_MODEL="gpt-4o" \
   --name mealie-ai \
   rikksullenber/mealie-ai:latest
 ```
@@ -49,7 +50,7 @@ services:
       - mealie-data:/app/data
     environment:
       OPENAI_API_KEY: "your-openai-api-key-here"
-      OPENAI_MODEL: "gpt-3.5-turbo"
+      OPENAI_MODEL: "gpt-4o"
       OPENAI_ENABLED: "true"
       ALLOW_SIGNUP: "false"
 
@@ -62,7 +63,7 @@ volumes:
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `OPENAI_API_KEY` | Your OpenAI API key | - | Yes |
-| `OPENAI_MODEL` | OpenAI model to use | `gpt-3.5-turbo` | No |
+| `OPENAI_MODEL` | OpenAI model to use | `gpt-4o` | No |
 | `OPENAI_ENABLED` | Enable AI features | `true` | No |
 | `OPENAI_ENABLE_IMAGE_SERVICES` | Enable image generation | `true` | No |
 
