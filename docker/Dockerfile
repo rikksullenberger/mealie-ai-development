@@ -50,7 +50,7 @@ RUN apt-get update \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install uv
+RUN pip install uv && pip install --upgrade pip
 
 WORKDIR /mealie
 
