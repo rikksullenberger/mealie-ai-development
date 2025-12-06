@@ -47,6 +47,8 @@ const routes = {
 
   recipesRecipeSlug: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}`,
   recipesRecipeSlugImage: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/image`,
+  recipesRecipeSlugImageAiGenerate: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/image/ai-generate`,
+  recipesRecipeSlugImageAiRegenerate: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/image/ai-regenerate`,
   recipesRecipeSlugAssets: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/assets`,
 
   recipesSlugComments: (slug: string) => `${prefix}/recipes/${slug}/comments`,
@@ -142,6 +144,19 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
   deleteImage(slug: string) {
     return this.requests.delete<string>(routes.recipesRecipeSlugImage(slug));
   }
+
+  generateAiImage(slug: string) {
+    return this.requests.post<string>(routes.recipesRecipeSlugImageAiGenerate(slug), {});
+  }
+
+  regenerateAiImage(slug: string) {
+    return this.requests.post<string>(routes.recipesRecipeSlugImageAiRegenerate(slug), {});
+  }
+
+  generateMissingImages() {
+    return this.requests.post<{ reportId: string }>("/api/recipes/images/generate-missing", {});
+  }
+
 
   async testCreateOneUrl(url: string, useOpenAI = false) {
     return await this.requests.post<Recipe | null>(routes.recipesTestScrapeUrl, { url, useOpenAI });

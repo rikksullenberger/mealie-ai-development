@@ -178,12 +178,14 @@ class OpenAIService(BaseService):
             raise Exception(f"OpenAI Request Failed. {e.__class__.__name__}: {e}") from e
 
     async def generate_image(self, prompt: str) -> bytes | None:
-        """Generate an image using DALL-E 3"""
+        """Generate an image using DALL-E 3 with Google AI watermark"""
         if not self.enable_image_services:
             self.logger.warning("OpenAI image services are disabled")
             return None
 
         try:
+            from mealie.pkgs.img.watermark import apply_watermark
+            
             client = self.get_client()
             response = await client.images.generate(
                 model="dall-e-3",
@@ -201,7 +203,15 @@ class OpenAIService(BaseService):
             if not image_data:
                 return None
 
-            return base64.b64decode(image_data)
+            image_bytes = base64.b64decode(image_data)
+            
+            # Apply watermark to all AI-generated images
+            try:
+                watermarked_bytes = apply_watermark(image_bytes)
+                return watermarked_bytes
+            except Exception as e:
+                self.logger.warning(f"Failed to apply watermark, returning original image: {e}")
+                return image_bytes
 
         except Exception as e:
             self.logger.error(f"Failed to generate image: {e}")

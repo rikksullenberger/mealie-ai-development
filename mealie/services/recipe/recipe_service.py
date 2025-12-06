@@ -471,6 +471,75 @@ class RecipeService(RecipeServiceBase):
         self.check_assets(new_data, recipe.slug)
         return new_data
 
+    async def generate_ai_recipe_image(self, slug_or_id: str | UUID, regenerate: bool = False) -> Recipe:
+        """
+        Generate or regenerate an AI image for a recipe using OpenAI.
+        
+        Args:
+            slug_or_id: Recipe slug or ID
+            regenerate: If True, regenerates even if image exists. If False, only generates if no image exists.
+        
+        Returns:
+            Updated recipe with new AI-generated image
+        
+        Raises:
+            exceptions.PermissionDenied: If user doesn't have permission to update the recipe
+            ValueError: If OpenAI is not enabled or image services are disabled
+        """
+        settings = get_app_settings()
+        
+        if not settings.OPENAI_ENABLED:
+            raise ValueError("OpenAI is not enabled")
+        
+        if not settings.OPENAI_ENABLE_IMAGE_SERVICES:
+            raise ValueError("OpenAI image services are not enabled")
+        
+        recipe = self.get_one(slug_or_id)
+        
+        if not self.can_update(recipe):
+            raise exceptions.PermissionDenied("You do not have permission to edit this recipe.")
+        
+        # Check if image exists and regenerate flag
+        if recipe.image and not regenerate:
+            self.logger.info(f"Recipe {recipe.slug} already has an image, skipping generation")
+            return recipe
+        
+        # Build a detailed prompt from recipe data
+        prompt_parts = [f"A high quality, professional food photography shot of {recipe.name}."]
+        
+        if recipe.description:
+            prompt_parts.append(recipe.description)
+        
+        # Add some key ingredients to the prompt for better context
+        if recipe.recipe_ingredient and len(recipe.recipe_ingredient) > 0:
+            ingredients = [ing.note for ing in recipe.recipe_ingredient[:5] if ing.note]
+            if ingredients:
+                prompt_parts.append(f"Key ingredients: {', '.join(ingredients)}.")
+        
+        prompt = " ".join(prompt_parts)
+        
+        # Generate the image
+        openai_service = OpenAIService()
+        try:
+            image_data = await openai_service.generate_image(prompt)
+            
+            if not image_data:
+                raise ValueError("Failed to generate image from OpenAI")
+            
+            # Save the image
+            data_service = RecipeDataService(recipe.id)
+            data_service.write_image(image_data, "webp")
+            
+            # Update the recipe image reference
+            updated_recipe = self.group_recipes.update_image(recipe.slug, "webp")
+            
+            self.logger.info(f"Successfully generated AI image for recipe {recipe.slug}")
+            return updated_recipe
+            
+        except Exception as e:
+            self.logger.error(f"Failed to generate AI image for recipe {recipe.slug}: {e}")
+            raise
+
     def update_last_made(self, slug_or_id: str | UUID, timestamp: datetime) -> Recipe:
         # we bypass the pre update check since any user can update a recipe's last made date, even if it's locked,
         # or if the user belongs to a different household

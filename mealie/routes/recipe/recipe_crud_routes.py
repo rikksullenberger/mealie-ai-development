@@ -283,6 +283,34 @@ class RecipeController(BaseRecipeController):
                 detail=ErrorResponse.respond(f"Failed to generate recipe: {e}"),
             )
 
+    @router.post("/images/generate-missing", status_code=202)
+    def generate_missing_images(self, bg_tasks: BackgroundTasks):
+        """
+        Scan all recipes in the household for missing images and generate AI images for them.
+        This operation runs asynchronously in the background and returns a report ID for tracking progress.
+        """
+        if not self.settings.OPENAI_ENABLED:
+            raise HTTPException(
+                status_code=400,
+                detail=ErrorResponse.respond("OpenAI is not enabled"),
+            )
+
+        if not self.settings.OPENAI_ENABLE_IMAGE_SERVICES:
+            raise HTTPException(
+                status_code=400,
+                detail=ErrorResponse.respond("OpenAI image services are not enabled"),
+            )
+
+        from mealie.services.recipe.recipe_batch_image_service import RecipeBatchImageService
+
+        batch_service = RecipeBatchImageService(self.service, self.repos, self.group, self.household, self.translator)
+        report_id = batch_service.get_report_id()
+        bg_tasks.add_task(batch_service.generate_missing_images)
+
+        self.logger.info(f"Started batch AI image generation for group {self.group.id}, report ID: {report_id}")
+
+        return {"reportId": report_id}
+
 
     # ==================================================================================================================
     # CRUD Operations
@@ -599,6 +627,53 @@ class RecipeController(BaseRecipeController):
         except Exception as e:
             self.handle_exceptions(e)
             return None
+
+    @router.post("/{slug}/image/ai-generate", tags=["Recipe: Images and Assets"])
+    async def generate_ai_recipe_image(self, slug: str):
+        """Generate an AI image for a recipe that doesn't have one"""
+        if not (self.settings.OPENAI_ENABLED and self.settings.OPENAI_ENABLE_IMAGE_SERVICES):
+            raise HTTPException(
+                status_code=400,
+                detail=ErrorResponse.respond("OpenAI image services are not enabled"),
+            )
+        
+        try:
+            updated_recipe = await self.service.generate_ai_recipe_image(slug, regenerate=False)
+            return SuccessResponse.respond(
+                message=self.t("recipe.ai-image-generated", name=updated_recipe.name)
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=ErrorResponse.respond(str(e)),
+            )
+        except Exception as e:
+            self.handle_exceptions(e)
+            return None
+
+    @router.post("/{slug}/image/ai-regenerate", tags=["Recipe: Images and Assets"])
+    async def regenerate_ai_recipe_image(self, slug: str):
+        """Regenerate an AI image for a recipe, replacing the existing one"""
+        if not (self.settings.OPENAI_ENABLED and self.settings.OPENAI_ENABLE_IMAGE_SERVICES):
+            raise HTTPException(
+                status_code=400,
+                detail=ErrorResponse.respond("OpenAI image services are not enabled"),
+            )
+        
+        try:
+            updated_recipe = await self.service.generate_ai_recipe_image(slug, regenerate=True)
+            return SuccessResponse.respond(
+                message=self.t("recipe.ai-image-regenerated", name=updated_recipe.name)
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=400,
+                detail=ErrorResponse.respond(str(e)),
+            )
+        except Exception as e:
+            self.handle_exceptions(e)
+            return None
+
 
     @router.post("/{slug}/assets", response_model=RecipeAsset, tags=["Recipe: Images and Assets"])
     def upload_recipe_asset(
