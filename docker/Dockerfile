@@ -19,6 +19,12 @@ RUN yarn install \
 RUN yarn generate
 
 ###############################################
+# Gosu Builder
+###############################################
+FROM golang:alpine AS gosu-builder
+RUN go install github.com/tianon/gosu@latest
+
+###############################################
 # Base Image - Python
 ###############################################
 FROM python:3.12-slim \
@@ -120,11 +126,13 @@ ENV GIT_COMMIT_HASH=$COMMIT
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
-    gosu \
     iproute2 \
     libldap-common \
     libldap2 \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --from=gosu-builder /go/bin/gosu /usr/sbin/gosu
+RUN chmod +x /usr/sbin/gosu
 
 # create directory used for Docker Secrets
 RUN mkdir -p /run/secrets
