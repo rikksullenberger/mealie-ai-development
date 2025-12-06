@@ -73,6 +73,21 @@
               </template>
             </v-text-field>
           </div>
+
+          <div class="mt-2">
+            <v-btn
+              block
+              color="accent"
+              variant="tonal"
+              :loading="loading"
+              @click="regenerateAiImage"
+            >
+              <v-icon start>
+                {{ $globals.icons.autoFix }}
+              </v-icon>
+              {{ $t("recipe.regenerate-image-ai") }}
+            </v-btn>
+          </div>
         </v-card-text>
       </v-card>
     </v-menu>
@@ -130,6 +145,28 @@ async function getImageFromURL() {
   }
   loading.value = false;
   menu.value = false;
+}
+
+async function regenerateAiImage() {
+  loading.value = true;
+  menu.value = false;
+  try {
+    const response = await api.recipes.regenerateAiImage(props.slug);
+    alert.success(response.data);
+    emit(DELETE_EVENT); // This triggers a refresh of the image on the parent component
+  }
+  catch (e: any) {
+    if (e.response?.data?.detail) {
+      alert.error(e.response.data.detail);
+    }
+    else {
+      alert.error(i18n.t("events.something-went-wrong"));
+    }
+    console.error("Failed to regenerate AI image", e);
+  }
+  finally {
+    loading.value = false;
+  }
 }
 
 const messages = computed(() =>
