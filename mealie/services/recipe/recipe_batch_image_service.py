@@ -141,11 +141,8 @@ class RecipeBatchImageService(BaseService):
                     full_recipe = self.repos.recipes.get_by_slug(self.group.id, recipe.slug)
                     if not full_recipe:
                         return
+                    
 
-                    # Check if user has permission to edit this recipe
-                    if not self.recipe_service.can_update(full_recipe):
-                        self.logger.debug(f"Skipping recipe {full_recipe.slug} - no edit permission")
-                        return
 
                     # Verify if a valid image exists on disk
                     # We check disk regardless of DB state to avoid overwrites and handle sync issues
@@ -156,11 +153,17 @@ class RecipeBatchImageService(BaseService):
                     has_valid_image = False
                     
                     if data_service.dir_image.exists():
-                        for f in data_service.dir_image.iterdir():
-                            if f.is_file() and f.suffix.lower() in valid_extensions and f.stat().st_size > 0:
+                        all_files = list(data_service.dir_image.iterdir())
+                        for f in all_files:
+                            is_file = f.is_file()
+                            suffix = f.suffix.lower()
+                            size = f.stat().st_size if is_file else 0
+                            is_valid = is_file and suffix in valid_extensions and size > 0
+                            
+                            if is_valid:
                                 has_valid_image = True
+                                self.logger.debug(f"Found valid image for {full_recipe.slug}: {f.name}")
                                 break
-                    
                     if has_valid_image:
                         self.logger.debug(f"Skipping recipe {full_recipe.slug} - valid image exists on disk")
                         return
