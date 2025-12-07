@@ -32,6 +32,7 @@ docker run -d \
   -v mealie-data:/app/data \
   -e OPENAI_API_KEY="your-openai-api-key-here" \
   -e OPENAI_MODEL="gpt-4o" \
+  -e BASE_URL="https://your-domain.com" \
   --name mealie-ai \
   rikksullenber/mealie-ai:latest
 ```
@@ -51,6 +52,7 @@ services:
     environment:
       OPENAI_API_KEY: "your-openai-api-key-here"
       OPENAI_MODEL: "gpt-4o"
+      BASE_URL: "https://your-domain.com"
       OPENAI_ENABLED: "true"
       ALLOW_SIGNUP: "false"
 
@@ -66,6 +68,7 @@ volumes:
 | `OPENAI_MODEL` | OpenAI model to use | `gpt-4o` | No |
 | `OPENAI_ENABLED` | Enable AI features | `true` | No |
 | `OPENAI_ENABLE_IMAGE_SERVICES` | Enable image generation | `true` | No |
+| `BASE_URL` | Public URL (required for sharing/auth) | - | Yes (if public) |
 
 ## Usage
 
