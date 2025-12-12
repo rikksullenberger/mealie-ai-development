@@ -11,8 +11,11 @@ A fork of [Mealie](https://github.com/mealie-recipes/mealie) with enhanced AI ca
 
 ## Features
 
+- **v3.5.5**: Fixed "ChunkLoadError" issues by implementing auto-reload on frontend and improved cache control headers
 - **AI Recipe Generation**: Generate complete recipes from simple descriptions using GPT-4o
 - **AI Image Generation**: Create professional food photography images using DALL-E 3
+- **Batch AI Operations**: Generate missing images for multiple recipes in one click
+- **Smart Auto-tagging**: Automatically tag recipes during generation based on content
 - **Parse Ingredients**: Automatically parse and structure recipe ingredients
 - **Enhanced Security**: Hardened image with patched system libraries and `urllib3` updates
 - **One-Click Setup**: Simple Docker deployment with OpenAI API key

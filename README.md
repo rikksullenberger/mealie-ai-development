@@ -13,7 +13,7 @@ This is a modified version of the excellent **Mealie** recipe management applica
 ### What's Different?
 
 This fork adds **AI-powered image generation** for recipes:
-
+- **v3.5.5**: Fixed "ChunkLoadError" issues by implementing auto-reload on frontend and improved cache control headers.
 - **Automatic Image Creation**: When creating a recipe using AI, you can now optionally generate a professional food photography image using OpenAI's DALL-E 3
 - **One-Click Generation**: Simply check the "Generate Image" box when creating a recipe from an AI prompt
 - **High-Quality Images**: Images are generated at 1024x1024 resolution with professional food photography style
