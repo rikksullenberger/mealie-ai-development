@@ -756,6 +756,7 @@ class RecipeController(BaseRecipeController):
                      ),
                  )
                  bg_tasks.add_task(self._auto_tag_background, created_recipe.slug)
+                 bg_tasks.add_task(self.service.generate_ai_recipe_image, created_recipe.slug)
 
             return created_recipe.slug
             
