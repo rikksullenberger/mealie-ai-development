@@ -50,7 +50,7 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 import { useUserApi } from "~/composables/api";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { alert } from "~/composables/use-toast";
 import { useI18n } from "vue-i18n";
 
@@ -62,6 +62,7 @@ const dialog = defineModel<boolean>({ default: false })
 const prompt = ref('')
 const loading = ref(false)
 const router = useRouter()
+const route = useRoute()
 const api = useUserApi();
 // const { t } = useI18n(); // Not using translation keys yet for new strings to keep it simple
 
@@ -82,7 +83,8 @@ const remix = async () => {
         dialog.value = false
         alert.success("Recipe Remix Successful!");
         
-        await router.push(`/recipe/${newSlug}`)
+        const groupSlug = route.params.groupSlug || 'home'; // Fallback to 'home' or handle error
+        await router.push(`/g/${groupSlug}/r/${newSlug}`)
     } catch (e: any) {
         console.error("Remix failed", e);
         const detail = e.response?.data?.detail || "Failed to remix recipe";
