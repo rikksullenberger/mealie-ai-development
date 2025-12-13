@@ -119,6 +119,30 @@ class RecipeController(BaseRecipeController):
                 status_code=500, detail=ErrorResponse.respond(message="Unknown Error", exception=ex.__class__.__name__)
             )
 
+    async def _post_create_ai_actions(self, slug: str):
+        settings = get_app_settings()
+        if not settings.OPENAI_ENABLED:
+            return
+
+        openai_service = OpenAIRecipeService(self.repos, self.user, self.household, self.translator)
+        
+        self.logger.info(f"Starting post-create AI actions for {slug}")
+        
+        # 1. Auto-tag
+        try:
+            await openai_service.auto_tag_recipe(slug)
+        except Exception as e:
+            self.logger.error(f"Failed to auto-tag recipe {slug}: {e}")
+
+        # 2. Generate Image
+        if settings.OPENAI_ENABLE_IMAGE_SERVICES:
+            try:
+                self.logger.info(f"Attempting to generate AI image for {slug}")
+                await openai_service.generate_ai_recipe_image(slug)
+                self.logger.info(f"Finished generating AI image for {slug}")
+            except Exception as e:
+                self.logger.error(f"Failed to generate AI image for {slug}: {e}")
+
     async def _auto_tag_background(self, slug: str):
         settings = get_app_settings()
         if not settings.OPENAI_ENABLED:
@@ -755,9 +779,8 @@ class RecipeController(BaseRecipeController):
                          url=urls.recipe_url(self.group.slug, created_recipe.slug, self.settings.BASE_URL),
                      ),
                  )
-                 bg_tasks.add_task(self._auto_tag_background, created_recipe.slug)
-                 bg_tasks.add_task(self.service.generate_ai_recipe_image, created_recipe.slug)
-
+                 bg_tasks.add_task(self._post_create_ai_actions, created_recipe.slug)
+            
             return created_recipe.slug
             
         except Exception as e:
