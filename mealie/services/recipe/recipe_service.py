@@ -794,3 +794,42 @@ class OpenAIRecipeService(RecipeService):
         except Exception as e:
             self.logger.error(f"Failed to auto-tag recipe {slug}: {e}")
             raise
+
+    async def remix_recipe(self, original_recipe: Recipe, user_prompt: str) -> Recipe:
+        self.logger.info(f"Remixing recipe {original_recipe.slug} with prompt: {user_prompt}")
+        
+        # Prepare recipe data for AI
+        recipe_data = {
+            "name": original_recipe.name,
+            "description": original_recipe.description,
+            "yield": original_recipe.recipe_yield,
+            "ingredients": [ing.note for ing in original_recipe.recipe_ingredient if ing.note],
+            "instructions": [step.text for step in original_recipe.recipe_instructions if step.text],
+        }
+
+        openai_service = OpenAIService()
+        prompt = openai_service.get_prompt(
+            "recipes.remix-recipe",
+            data_injections=[
+                 OpenAIDataInjection(
+                    description=(
+                        "This is the JSON response schema. You must respond in valid JSON that follows this schema. "
+                    ),
+                    value=OpenAIRecipe,
+                )
+            ]
+        )
+        
+        full_msg = f"Original Recipe JSON: {json.dumps(recipe_data)}\n\nInstruction: {user_prompt}\n\nPlease output the modified recipe."
+
+        response_json = await openai_service.get_response(prompt, full_msg, force_json_response=True)
+        if not response_json:
+            raise Exception("No response from OpenAI")
+
+        try:
+            openai_recipe = OpenAIRecipe.parse_openai_response(response_json)
+            new_recipe = self._convert_recipe(openai_recipe)
+            return new_recipe
+        except Exception as e:
+             self.logger.error(f"Failed to parse OpenAI response: {response_json}")
+             raise ValueError("Unable to parse remix recipe") from e

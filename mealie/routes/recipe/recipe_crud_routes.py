@@ -10,6 +10,7 @@ from fastapi import (
     Depends,
     File,
     Form,
+    Body,
     HTTPException,
     Path,
     Query,
@@ -714,6 +715,52 @@ class RecipeController(BaseRecipeController):
         except Exception as e:
             self.handle_exceptions(e)
             return None
+
+    @router.post("/{slug}/remix", status_code=201, response_model=str, tags=["Recipe: AI Services"])
+    async def remix_recipe(self, slug: str, bg_tasks: BackgroundTasks, body: dict = Body(...)):
+        """Remix a recipe using AI"""
+        if not self.settings.OPENAI_ENABLED:
+             raise HTTPException(status_code=400, detail=ErrorResponse.respond("OpenAI is not enabled"))
+             
+        prompt = body.get("prompt")
+        if not prompt:
+            raise HTTPException(status_code=400, detail=ErrorResponse.respond("Prompt is required"))
+
+        recipe = self.service.get_one(slug)
+        if not recipe:
+            raise HTTPException(status_code=404, detail=ErrorResponse.respond("Recipe not found"))
+
+        openai_service = OpenAIRecipeService(self.repos, self.user, self.household, self.translator)
+        
+        try:
+            new_recipe = await openai_service.remix_recipe(recipe, prompt)
+            
+            # Ensure name is distinguishable if AI didn't change it
+            if new_recipe.name == recipe.name:
+                new_recipe.name = f"{recipe.name} (Remix)"
+                new_recipe.slug = create_recipe_slug(new_recipe.name)
+            
+            created_recipe = self.service.create_one(new_recipe)
+            
+            if created_recipe:
+                 self.publish_event(
+                    event_type=EventTypes.recipe_created,
+                    document_data=EventRecipeData(operation=EventOperation.create, recipe_slug=created_recipe.slug),
+                    group_id=created_recipe.group_id,
+                    household_id=created_recipe.household_id,
+                    message=self.t(
+                         "notifications.generic-created-with-url", 
+                         name=created_recipe.name,
+                         url=urls.recipe_url(self.group.slug, created_recipe.slug, self.settings.BASE_URL),
+                     ),
+                 )
+                 bg_tasks.add_task(self._auto_tag_background, created_recipe.slug)
+
+            return created_recipe.slug
+            
+        except Exception as e:
+            self.logger.exception(e)
+            raise HTTPException(status_code=500, detail=ErrorResponse.respond(str(e)))
 
     @router.post("/{slug}/auto-tag", tags=["Recipe: AI Services"])
     async def auto_tag_recipe(self, slug: str):

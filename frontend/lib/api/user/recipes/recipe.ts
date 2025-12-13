@@ -50,6 +50,7 @@ const routes = {
   recipesRecipeSlugAutoTag: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/auto-tag`,
   recipesRecipeSlugImageAiGenerate: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/image/ai-generate`,
   recipesRecipeSlugImageAiRegenerate: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/image/ai-regenerate`,
+  recipesRecipeSlugRemix: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/remix`,
   recipesRecipeSlugAssets: (recipe_slug: string) => `${prefix}/recipes/${recipe_slug}/assets`,
 
   recipesSlugComments: (slug: string) => `${prefix}/recipes/${slug}/comments`,
@@ -157,6 +158,10 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
   regenerateAiImage(slug: string, customPrompt?: string) {
     const payload = customPrompt ? { custom_prompt: customPrompt } : {};
     return this.requests.post<string>(routes.recipesRecipeSlugImageAiRegenerate(slug), payload);
+  }
+
+  remix(slug: string, prompt: string) {
+    return this.requests.post<string>(routes.recipesRecipeSlugRemix(slug), { prompt });
   }
 
   generateMissingImages() {

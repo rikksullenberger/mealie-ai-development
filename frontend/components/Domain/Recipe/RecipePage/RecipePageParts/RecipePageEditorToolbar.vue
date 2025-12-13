@@ -14,6 +14,20 @@
       :is-owner="recipe.userId == user.id"
       @upload="uploadImage"
     />
+    <v-btn
+        color="primary"
+        variant="tonal"
+        class="my-2 ml-1"
+        @click="showRemixDialog = true"
+    >
+        <v-icon start>mdi-wand</v-icon>
+        Remix
+    </v-btn>
+
+    <RecipeRemixDialog
+        v-model="showRemixDialog"
+        :slug="recipe.slug"
+    />
     <v-spacer />
     <v-select
       v-model="recipe.userId"
@@ -37,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { usePageState, usePageUser } from "~/composables/recipe-page/shared-state";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import type { Recipe } from "~/lib/api/types/recipe";
@@ -47,12 +61,15 @@ import RecipeSettingsMenu from "~/components/Domain/Recipe/RecipeSettingsMenu.vu
 import { useUserStore } from "~/composables/store/use-user-store";
 import UserAvatar from "~/components/Domain/User/UserAvatar.vue";
 import { useHouseholdStore } from "~/composables/store";
+import RecipeRemixDialog from "~/components/Domain/Recipe/RecipeRemixDialog.vue";
 
 const recipe = defineModel<NoUndefinedField<Recipe>>({ required: true });
 
 const { user } = usePageUser();
 const api = useUserApi();
 const { imageKey } = usePageState(recipe.value.slug);
+
+const showRemixDialog = ref(false);
 
 const canEditOwner = computed(() => {
   return user.id === recipe.value.userId || user.admin;
