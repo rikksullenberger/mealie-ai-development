@@ -1,3 +1,13 @@
+# ⚠️ DEVELOPMENT REPOSITORY WARNING ⚠️
+
+# THIS IS A DEVELOPMENT REPOSITORY
+
+# PLEASE USE THE PRODUCTION VERSION INSTEAD.
+
+# THIS VERSION IS GUARANTEED TO BREAK ANYTHING IT IS PUT ON.
+
+# I AM NOT RESPONSIBLE FOR ANY DAMAGE IT MAY CAUSE.
+
 # Mealie AI
 
 A fork of [Mealie](https://github.com/mealie-recipes/mealie) with enhanced AI capabilities for automatic recipe image generation.
@@ -258,4 +268,3 @@ This is an unofficial fork and is not affiliated with or endorsed by the officia
 ### 📋 General Use
 
 Use this software at your own risk. The maintainer provides this fork as-is for personal use and makes no guarantees about functionality, reliability, data integrity, or fitness for any particular purpose.
-
