@@ -14,7 +14,7 @@ A fork of [Mealie](https://github.com/mealie-recipes/mealie) with enhanced AI ca
 
 ## About This Fork
 
-This is a modified version of the excellent **Mealie** recipe management application, created by the talented team at [mealie-recipes](https://github.com/mealie-recipes). 
+This is the **development repository** for **Mealie AI**, which is a fork of the excellent **Mealie** recipe management application, created by the talented team at [mealie-recipes](https://github.com/mealie-recipes). 
 
 ### Acknowledgments
 
