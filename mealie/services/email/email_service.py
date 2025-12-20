@@ -1,4 +1,7 @@
 from pathlib import Path
+from sqlalchemy.orm import Session
+from mealie.db.db_setup import session_context
+from mealie.services.admin.settings_service import SettingsService
 
 from jinja2 import Template
 from pydantic import BaseModel
@@ -30,16 +33,36 @@ class EmailTemplate(BaseModel):
 
 
 class EmailService(BaseService):
-    def __init__(self, sender: ABCEmailSender | None = None, locale: str | None = None) -> None:
+    def __init__(self, sender: ABCEmailSender | None = None, locale: str | None = None, session: Session | None = None) -> None:
         self.templates_dir = CWD / "templates"
         self.default_template = self.templates_dir / "default.html"
-        self.sender: ABCEmailSender = sender or DefaultEmailSender()
+        # If sender is provided, we assume it's already configured or doesn't need our session.
+        # But if we create DefaultEmailSender, pass the session.
+        self.sender: ABCEmailSender = sender or DefaultEmailSender(session=session)
         self.translator: Translator = local_provider(locale)
+        self.session = session
 
         super().__init__()
 
+    def _is_smtp_enabled(self) -> bool:
+        # Check if enabled dynamically
+        # Since SettingsService handles merging, we just check if required fields are present?
+        # AppSettings.SMTP_ENABLE checks self.SMTP_FEATURE.enabled.
+        # We need similar logic on the effective settings.
+        
+        def get_check(sess: Session):
+             config = SettingsService(sess).get_effective_smtp_settings()
+             # Simplified check: HOST and PORT must be set
+             return bool(config.get("SMTP_HOST") and config.get("SMTP_PORT"))
+
+        if self.session:
+            return get_check(self.session)
+        else:
+            with session_context() as sess:
+                return get_check(sess)
+
     def send_email(self, email_to: str, data: EmailTemplate) -> bool:
-        if not self.settings.SMTP_ENABLE:
+        if not self._is_smtp_enabled():
             return False
 
         return self.sender.send(email_to, data.subject, data.render_html(self.default_template))

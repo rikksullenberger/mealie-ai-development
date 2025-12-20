@@ -10,6 +10,10 @@ from html2text import html2text
 
 from mealie.services._base_service import BaseService
 
+from mealie.db.db_setup import session_context
+from mealie.services.admin.settings_service import SettingsService
+from sqlalchemy.orm import Session
+
 SMTP_TIMEOUT = 10
 """Timeout in seconds for SMTP connection"""
 
@@ -85,32 +89,48 @@ class DefaultEmailSender(ABCEmailSender, BaseService):
     from the config file to send emails via the python standard library. It supports
     both TLS and SSL connections.
     """
+    
+    def __init__(self, session: Session | None = None) -> None:
+        self.session = session
+        super().__init__()
+
+    def _get_smtp_config(self):
+        def get_config(sess: Session):
+            return SettingsService(sess).get_effective_smtp_settings()
+
+        if self.session:
+            return get_config(self.session)
+        else:
+            with session_context() as sess:
+                return get_config(sess)
 
     def send(self, email_to: str, subject: str, html: str) -> bool:
-        if self.settings.SMTP_FROM_EMAIL is None or self.settings.SMTP_FROM_NAME is None:
+        config = self._get_smtp_config()
+        
+        if config["SMTP_FROM_EMAIL"] is None or config["SMTP_FROM_NAME"] is None:
             raise ValueError("SMTP_FROM_EMAIL and SMTP_FROM_NAME must be set in the config file.")
 
         message = Message(
             subject=subject,
             html=html,
-            mail_from_name=self.settings.SMTP_FROM_NAME,
-            mail_from_address=self.settings.SMTP_FROM_EMAIL,
+            mail_from_name=config["SMTP_FROM_NAME"],
+            mail_from_address=config["SMTP_FROM_EMAIL"],
         )
 
-        if self.settings.SMTP_HOST is None or self.settings.SMTP_PORT is None:
+        if config["SMTP_HOST"] is None or config["SMTP_PORT"] is None:
             raise ValueError("SMTP_HOST, SMTP_PORT must be set in the config file.")
 
         smtp_options = EmailOptions(
-            self.settings.SMTP_HOST,
-            int(self.settings.SMTP_PORT),
-            tls=self.settings.SMTP_AUTH_STRATEGY.upper() == "TLS" if self.settings.SMTP_AUTH_STRATEGY else False,
-            ssl=self.settings.SMTP_AUTH_STRATEGY.upper() == "SSL" if self.settings.SMTP_AUTH_STRATEGY else False,
+            config["SMTP_HOST"],
+            int(config["SMTP_PORT"]),
+            tls=config["SMTP_AUTH_STRATEGY"].upper() == "TLS" if config["SMTP_AUTH_STRATEGY"] else False,
+            ssl=config["SMTP_AUTH_STRATEGY"].upper() == "SSL" if config["SMTP_AUTH_STRATEGY"] else False,
         )
 
-        if self.settings.SMTP_USER:
-            smtp_options.username = self.settings.SMTP_USER
-        if self.settings.SMTP_PASSWORD:
-            smtp_options.password = self.settings.SMTP_PASSWORD
+        if config["SMTP_USER"]:
+            smtp_options.username = config["SMTP_USER"]
+        if config["SMTP_PASSWORD"]:
+            smtp_options.password = config["SMTP_PASSWORD"]
 
         response = message.send(to=email_to, smtp=smtp_options)
         self.logger.debug(f"send email result: {response}")

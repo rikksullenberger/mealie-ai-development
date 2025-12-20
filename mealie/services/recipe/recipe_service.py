@@ -547,7 +547,7 @@ class RecipeService(RecipeServiceBase):
         prompt = " ".join(prompt_parts)
         
         # Generate the image
-        openai_service = OpenAIService()
+        openai_service = OpenAIService(self.repos.session)
         try:
             image_data = await openai_service.generate_image(prompt)
             
@@ -627,7 +627,7 @@ class OpenAIRecipeService(RecipeService):
         if not (settings.OPENAI_ENABLED and settings.OPENAI_ENABLE_IMAGE_SERVICES):
             raise ValueError("OpenAI image services are not available")
 
-        openai_service = OpenAIService()
+        openai_service = OpenAIService(self.repos.session)
         prompt = openai_service.get_prompt(
             "recipes.parse-recipe-image",
             data_injections=[
@@ -667,7 +667,7 @@ class OpenAIRecipeService(RecipeService):
         return recipe
 
     async def generate_recipe_from_prompt(self, user_prompt: str, include_image: bool = False) -> Recipe:
-        openai_service = OpenAIService()
+        openai_service = OpenAIService(self.repos.session)
         prompt = openai_service.get_prompt(
             "recipes.generate-recipe",
             data_injections=[
@@ -711,7 +711,7 @@ class OpenAIRecipeService(RecipeService):
         recipe = await self.generate_recipe_from_prompt(user_prompt)
         image_data = None
         if include_image:
-            openai_service = OpenAIService()
+            openai_service = OpenAIService(self.repos.session)
             image_prompt = f"A high quality, professional food photography shot of {recipe.name}. {recipe.description or ''}"
             image_data = await openai_service.generate_image(image_prompt)
         
@@ -729,7 +729,7 @@ class OpenAIRecipeService(RecipeService):
             "instructions": [step.text for step in recipe.recipe_instructions if step.text],
         }
         
-        openai_service = OpenAIService()
+        openai_service = OpenAIService(self.repos.session)
         prompt = openai_service.get_prompt(
             "recipes.auto-tag",
             data_injections=[

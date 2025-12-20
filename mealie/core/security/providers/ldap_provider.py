@@ -1,7 +1,12 @@
 from datetime import timedelta
 
-import ldap
-from ldap.ldapobject import LDAPObject
+try:
+    import ldap
+    from ldap.ldapobject import LDAPObject
+except (ImportError, ModuleNotFoundError):
+    ldap = None
+    LDAPObject = object
+
 from sqlalchemy.orm.session import Session
 
 from mealie.core import root_logger
