@@ -6,7 +6,9 @@ FROM node:24 \
 
 WORKDIR /frontend
 
-COPY frontend .
+COPY frontend/package.json frontend/yarn.lock ./
+COPY frontend/.yarnrc.yml ./
+COPY frontend/.yarn ./.yarn
 
 RUN yarn install \
     --prefer-offline \
@@ -15,6 +17,8 @@ RUN yarn install \
     --production=false \
     # https://github.com/docker/build-push-action/issues/471
     --network-timeout 1000000
+
+COPY frontend .
 
 RUN yarn generate
 
