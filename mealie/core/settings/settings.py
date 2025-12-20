@@ -413,6 +413,12 @@ class AppSettings(AppLoggingSettings):
     The number of seconds to wait for an OpenAI request to complete before cancelling the request
     """
 
+    # ===============================================
+    # Google Configuration
+
+    GOOGLE_API_KEY: MaskedNoneString = None
+    GOOGLE_MODEL: str = "gemini-pro"
+
     @property
     def OPENAI_FEATURE(self) -> FeatureDetails:
         description = None
@@ -472,6 +478,8 @@ def app_settings_constructor(data_dir: Path, production: bool, env_file: Path, e
         "SESSION_SECRET": determine_secrets(data_dir, ".session_secret", production),
         "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY"),
         "OPENAI_MODEL": os.environ.get("OPENAI_MODEL", "gpt-3.5-turbo"),
+        "GOOGLE_API_KEY": os.environ.get("GOOGLE_API_KEY"),
+        "GOOGLE_MODEL": os.environ.get("GOOGLE_MODEL", "gemini-pro"),
     }
     app_settings = AppSettings(
         _env_file=env_file,  # type: ignore

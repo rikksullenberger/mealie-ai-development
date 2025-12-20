@@ -100,62 +100,209 @@
       </v-card>
     </section>
 
-    <!-- Email -->
+    <!-- SMTP Settings -->
     <section>
       <BaseCardSectionTitle
         class="pt-2"
         :icon="$globals.icons.email"
         :title="$t('user.email')"
       />
-      <v-alert
-        border="start"
-        :border-color="appConfig.emailReady ? 'success' : 'error'"
-        variant="text"
-        elevation="2"
-      >
-        <template #prepend>
-          <v-icon :color="appConfig.emailReady ? 'success' : 'warning'">
-            {{ appConfig.emailReady ? $globals.icons.checkboxMarkedCircle : $globals.icons.alertCircle }}
-          </v-icon>
-        </template>
-        <div class="font-weight-medium">
-          {{ $t('settings.email-configuration-status') }}
+      <v-card class="mb-4 pa-4">
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="siteSettings.smtp_host"
+              label="SMTP Host"
+              variant="outlined"
+              hide-details="auto"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+             <v-text-field
+              v-model="siteSettings.smtp_port"
+              label="SMTP Port"
+              type="number"
+              variant="outlined"
+              hide-details="auto"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="siteSettings.smtp_user"
+              label="SMTP User"
+              variant="outlined"
+              hide-details="auto"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="siteSettings.smtp_password"
+              label="SMTP Password"
+              type="password"
+              variant="outlined"
+              hide-details="auto"
+              placeholder="*****"
+            />
+          </v-col>
+           <v-col cols="12" md="6">
+            <v-text-field
+              v-model="siteSettings.smtp_from_name"
+              label="From Name"
+              variant="outlined"
+              hide-details="auto"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="siteSettings.smtp_from_email"
+              label="From Email"
+              variant="outlined"
+              hide-details="auto"
+            />
+          </v-col>
+           <v-col cols="12" md="6">
+             <v-select
+              v-model="siteSettings.smtp_auth_strategy"
+              :items="['TLS', 'SSL', 'None']"
+              label="Auth Strategy"
+              variant="outlined"
+              hide-details="auto"
+              clearable
+            />
+          </v-col>
+        </v-row>
+        
+        <div class="mt-4">
+            <v-divider class="mb-4" />
+             <div class="d-flex align-center">
+             <v-text-field
+                v-model="address"
+                class="mr-4"
+                :label="$t('user.email')"
+                :rules="[validators.email]"
+                density="compact"
+                hide-details
+                style="max-width: 300px"
+              />
+              <BaseButton
+                color="info"
+                variant="elevated"
+                :loading="loading"
+                :disabled="!validEmail"
+                @click="testEmail"
+              >
+                <template #icon>
+                  {{ $globals.icons.email }}
+                </template>
+                {{ $t("general.test") }}
+              </BaseButton>
+             </div>
+             <template v-if="tested">
+                <div class="mt-2">
+                  <span :class="success ? 'text-success' : 'text-error'">
+                    {{ success ? $t('settings.succeeded') : $t('settings.failed') + ': ' + error }}
+                  </span>
+                </div>
+              </template>
         </div>
-        <div>
-          {{ appConfig.emailReady ? $t('settings.ready') : $t('settings.not-ready') }}
-        </div>
-        <div>
-          <v-text-field
-            v-model="address"
-            class="mr-4"
-            :label="$t('user.email')"
-            :rules="[validators.email]"
-          />
-          <BaseButton
-            color="info"
-            variant="elevated"
-            :disabled="!appConfig.emailReady || !validEmail"
-            :loading="loading"
-            class="opacity-100"
-            @click="testEmail"
-          >
-            <template #icon>
-              {{ $globals.icons.email }}
-            </template>
-            {{ $t("general.test") }}
-          </BaseButton>
-          <template v-if="tested">
-            <v-divider class="my-x mt-6" />
-            <v-card-text class="px-0">
-              <h4> {{ $t("settings.email-test-results") }}</h4>
-              <span class="pl-4">
-                {{ success ? $t('settings.succeeded') : $t('settings.failed') }}
-              </span>
-            </v-card-text>
-          </template>
-        </div>
-      </v-alert>
+      </v-card>
     </section>
+
+    <!-- AI Settings -->
+    <section>
+      <BaseCardSectionTitle
+        class="pt-2"
+        :icon="$globals.icons.autoFix"
+        title="AI Services"
+      />
+      <v-card class="mb-4 pa-4">
+        <v-alert
+          type="info"
+          variant="tonal"
+          class="mb-4"
+          text="Configure OpenAI settings. These will override environment variables if set."
+        />
+        <v-row>
+          <v-col cols="12">
+             <v-select
+              v-model="siteSettings.ai_provider"
+              :items="[{ title: 'OpenAI', value: 'openai' }, { title: 'Google (Gemini)', value: 'google' }]"
+              label="AI Provider"
+              variant="outlined"
+              hide-details="auto"
+            />
+          </v-col>
+        </v-row>
+
+        <v-row v-if="siteSettings.ai_provider === 'openai' || !siteSettings.ai_provider">
+          <v-col cols="12">
+            <v-text-field
+              v-model="siteSettings.openai_api_key"
+              label="OpenAI API Key"
+              type="password"
+              variant="outlined"
+              hide-details="auto"
+              placeholder="sk-..."
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="siteSettings.openai_model"
+              label="OpenAI Model"
+              variant="outlined"
+              hide-details="auto"
+              placeholder="gpt-3.5-turbo"
+            />
+          </v-col>
+           <v-col cols="12" md="6">
+            <v-text-field
+              v-model="siteSettings.openai_base_url"
+              label="OpenAI Base URL"
+              variant="outlined"
+              hide-details="auto"
+              placeholder="https://api.openai.com/v1"
+            />
+          </v-col>
+        </v-row>
+
+        <v-row v-if="siteSettings.ai_provider === 'google'">
+          <v-col cols="12">
+            <v-text-field
+              v-model="siteSettings.google_api_key"
+              label="Google API Key"
+              type="password"
+              variant="outlined"
+              hide-details="auto"
+              placeholder="AIza..."
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="siteSettings.google_model"
+              label="Google Model"
+              variant="outlined"
+              hide-details="auto"
+              placeholder="gemini-pro"
+            />
+          </v-col>
+        </v-row>
+      </v-card>
+    </section>
+
+    <!-- Save Actions -->
+    <div class="d-flex justify-end mb-4">
+        <BaseButton
+        color="success"
+        size="large"
+        :loading="loading"
+        @click="saveSettings"
+        >
+        <template #icon>
+            {{ $globals.icons.contentSave }}
+        </template>
+        {{ $t("general.save") }}
+        </BaseButton>
+    </div>
 
     <!-- General App Info -->
     <section class="mt-4">
@@ -232,7 +379,9 @@ import { useAdminApi, useUserApi } from "~/composables/api";
 import { validators } from "~/composables/use-validators";
 import { useAsyncKey } from "~/composables/use-utils";
 import type { CheckAppConfig } from "~/lib/api/types/admin";
+import type { SiteSettings } from "~/lib/api/types/admin/detailed-settings";
 import AppLoader from "~/components/global/AppLoader.vue";
+import { useToast } from "~/composables/use-toast";
 
 enum DockerVolumeState {
   Unknown = "unknown",
@@ -297,7 +446,35 @@ export default defineNuxtComponent({
     }
     const api = useUserApi();
     const adminApi = useAdminApi();
+    const toast = useToast();
+    
+    const siteSettings = ref<SiteSettings>({});
+
+    async function saveSettings() {
+      state.loading = true;
+      try {
+        const { data } = await adminApi.settings.update(siteSettings.value);
+        if (data) {
+          siteSettings.value = data;
+          toast.success(i18n.t("general.saved"));
+          
+          // Refresh checks
+          const { data: checks } = await adminApi.about.checkApp();
+          if (checks) {
+             appConfig.value = { ...checks, isSiteSecure: isLocalHostOrHttps() };
+          }
+        }
+      } catch (e) {
+        // Error handling handled by interceptors usually, or we show toast
+      }
+      state.loading = false;
+    }
+
     onMounted(async () => {
+      adminApi.settings.get().then(({ data }) => {
+        if (data) siteSettings.value = data;
+      });
+
       const { data } = await adminApi.about.checkApp();
       if (data) {
         appConfig.value = { ...data, isSiteSecure: false };
@@ -513,8 +690,9 @@ export default defineNuxtComponent({
       validEmail,
       validators,
       ...toRefs(state),
-      testEmail,
       appInfo,
+      siteSettings,
+      saveSettings,
     };
   },
 });

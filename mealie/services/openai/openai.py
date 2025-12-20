@@ -1,98 +1,70 @@
-import base64
-import inspect
-import json
 import os
-from abc import ABC, abstractmethod
 from pathlib import Path
 from textwrap import dedent
 
 from openai import NOT_GIVEN, AsyncOpenAI
 from openai.types.chat import ChatCompletion
-from pydantic import BaseModel, field_validator
+from sqlalchemy.orm import Session
 
 from mealie.core.config import get_app_settings
-from mealie.pkgs import img
+from mealie.db.db_setup import session_context
+from mealie.services.admin.settings_service import SettingsService
+from mealie.services.openai.types import OpenAIDataInjection, OpenAIImageBase
+from mealie.services.openai.providers import OpenAIProvider, GoogleAIProvider, AIProvider
 
 from .._base_service import BaseService
-
-
-class OpenAIDataInjection(BaseModel):
-    description: str
-    value: str
-
-    @field_validator("value", mode="before")
-    def parse_value(cls, value):
-        if not value:
-            raise ValueError("Value cannot be empty")
-        if isinstance(value, str):
-            return value
-
-        # convert Pydantic models to JSON
-        if isinstance(value, BaseModel):
-            return value.model_dump_json()
-
-        # convert Pydantic types to their JSON schema definition
-        if inspect.isclass(value) and issubclass(value, BaseModel):
-            value = value.model_json_schema()
-
-        # attempt to convert object to JSON
-        try:
-            return json.dumps(value, separators=(",", ":"))
-        except TypeError:
-            return value
-
-
-class OpenAIImageBase(BaseModel, ABC):
-    @abstractmethod
-    def get_image_url(self) -> str: ...
-
-    def build_message(self) -> dict:
-        return {
-            "type": "image_url",
-            "image_url": {"url": self.get_image_url()},
-        }
-
-
-class OpenAIImageExternal(OpenAIImageBase):
-    url: str
-
-    def get_image_url(self) -> str:
-        return self.url
-
-
-class OpenAILocalImage(OpenAIImageBase):
-    filename: str
-    path: Path
-
-    def get_image_url(self) -> str:
-        image = img.PillowMinifier.to_jpg(
-            self.path, dest=self.path.parent.joinpath(f"{self.filename}-min-original.jpg")
-        )
-        with open(image, "rb") as f:
-            b64content = base64.b64encode(f.read()).decode("utf-8")
-        return f"data:image/jpeg;base64,{b64content}"
 
 
 class OpenAIService(BaseService):
     PROMPTS_DIR = Path(os.path.dirname(os.path.abspath(__file__))) / "prompts"
 
-    def __init__(self) -> None:
-        settings = get_app_settings()
-        if not settings.OPENAI_ENABLED:
-            raise ValueError("OpenAI is not enabled")
+    def __init__(self, session: Session | None = None) -> None:
+        super().__init__()
+        
+        self.ai_provider = "openai"
+        self.google_api_key = None
+        self.google_model = "gemini-pro"
+        
+        def load_settings(sess: Session):
+            service = SettingsService(sess)
+            self.model = service.get_effective_openai_model()
+            self.api_key = service.get_effective_openai_api_key()
+            
+            self.ai_provider = service.get_effective_ai_provider()
+            self.google_api_key = service.get_effective_google_api_key()
+            self.google_model = service.get_effective_google_model()
 
-        self.model = settings.OPENAI_MODEL
-        self.workers = settings.OPENAI_WORKERS
-        self.send_db_data = settings.OPENAI_SEND_DATABASE_DATA
-        self.enable_image_services = settings.OPENAI_ENABLE_IMAGE_SERVICES
+            db_settings = service.get_settings()
+            self.base_url = db_settings.openai_base_url or self.settings.OPENAI_BASE_URL
+            
+        if session:
+            load_settings(session)
+        else:
+            with session_context() as sess:
+                load_settings(sess)
+
+        self.workers = self.settings.OPENAI_WORKERS
+        self.send_db_data = self.settings.OPENAI_SEND_DATABASE_DATA
+        self.enable_image_services = self.settings.OPENAI_ENABLE_IMAGE_SERVICES
 
         self.get_client = lambda: AsyncOpenAI(
-            base_url=settings.OPENAI_BASE_URL,
-            api_key=settings.OPENAI_API_KEY,
-            timeout=settings.OPENAI_REQUEST_TIMEOUT,
-            default_headers=settings.OPENAI_CUSTOM_HEADERS,
-            default_query=settings.OPENAI_CUSTOM_PARAMS,
+            base_url=self.base_url,
+            api_key=self.api_key,
+            timeout=self.settings.OPENAI_REQUEST_TIMEOUT,
+            default_headers=self.settings.OPENAI_CUSTOM_HEADERS,
+            default_query=self.settings.OPENAI_CUSTOM_PARAMS,
         )
+
+        # Initialize Provider
+        self.provider: AIProvider
+        if self.ai_provider == "google":
+            if self.google_api_key:
+                self.provider = GoogleAIProvider(self.google_api_key, self.google_model)
+            else:
+                 self.logger.warning("Google AI selected but no API key found. Falling back to OpenAI (without key if masked).")
+                 self.provider = OpenAIProvider(self)
+        else:
+            self.provider = OpenAIProvider(self)
 
         super().__init__()
 
@@ -135,22 +107,35 @@ class OpenAIService(BaseService):
             )
         return "\n".join(content_parts)
 
-    async def _get_raw_response(self, prompt: str, content: list[dict], force_json_response=True) -> ChatCompletion:
-        client = self.get_client()
-        return await client.chat.completions.create(
-            messages=[
-                {
-                    "role": "system",
-                    "content": prompt,
-                },
-                {
-                    "role": "user",
-                    "content": content,
-                },
-            ],
-            model=self.model,
-            response_format={"type": "json_object"} if force_json_response else NOT_GIVEN,
-        )
+    async def _get_raw_response_openai(self, prompt: str, content: list[dict], force_json_response=True) -> str | None:
+        # Renamed from _get_raw_response and modified to return str content directly to match provider interface
+        # Wait, OpenAIProvider expects raw response or string?
+        # My OpenAIProvider implementation: return await self.service._get_raw_response_openai(...)
+        # And OpenAIProvider.get_response signature -> str | None
+        # So this method should return str | None.
+        
+        try:
+            client = self.get_client()
+            response = await client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": prompt,
+                    },
+                    {
+                        "role": "user",
+                        "content": content,
+                    },
+                ],
+                model=self.model,
+                response_format={"type": "json_object"} if force_json_response else NOT_GIVEN,
+            )
+            if not response.choices:
+                return None
+            return response.choices[0].message.content
+        except Exception as e:
+            self.logger.error(f"OpenAI Request Failed: {e}")
+            return None
 
     async def get_response(
         self,
@@ -160,25 +145,20 @@ class OpenAIService(BaseService):
         images: list[OpenAIImageBase] | None = None,
         force_json_response=True,
     ) -> str | None:
-        """Send data to OpenAI and return the response message content"""
+        """Send data to AI Provider and return the response message content"""
         if images and not self.enable_image_services:
-            self.logger.warning("OpenAI image services are disabled, ignoring images")
+            self.logger.warning("AI image services are disabled, ignoring images")
             images = None
 
         try:
-            user_messages = [{"type": "text", "text": message}]
-            for image in images or []:
-                user_messages.append(image.build_message())
-
-            response = await self._get_raw_response(prompt, user_messages, force_json_response)
-            if not response.choices:
-                return None
-            return response.choices[0].message.content
+            return await self.provider.get_response(prompt, message, images, force_json_response)
         except Exception as e:
-            raise Exception(f"OpenAI Request Failed. {e.__class__.__name__}: {e}") from e
+            raise Exception(f"AI Request Failed. {e.__class__.__name__}: {e}") from e
 
-    async def generate_image(self, prompt: str) -> bytes | None:
-        """Generate an image using DALL-E 3 with Google AI watermark"""
+    async def _generate_image_openai(self, prompt: str) -> bytes | None:
+        """Generate an image using DALL-E 3 with Google AI watermark (Internal OpenAI impl)"""
+        # Note: Keeps 'Google AI watermark' legacy name/comment if that's what it was
+        
         if not self.enable_image_services:
             self.logger.warning("OpenAI image services are disabled")
             return None
@@ -216,3 +196,6 @@ class OpenAIService(BaseService):
         except Exception as e:
             self.logger.error(f"Failed to generate image: {e}")
             return None
+
+    async def generate_image(self, prompt: str) -> bytes | None:
+        return await self.provider.generate_image(prompt)
