@@ -77,8 +77,35 @@ class GoogleAIProvider(AIProvider):
             return None
 
     async def generate_image(self, prompt: str) -> bytes | None:
-        # Google Generative AI Python SDK currently focuses on Gemini (text/multimodal generation).
-        # Image generation (Imagen) might not be fully exposed or requires Vertex AI.
-        # For now, we return None or log warning.
-        logger.warning("Google Image Generation is not fully supported in this provider yet.")
-        return None
+        if not HAS_GOOGLE_AI:
+            logger.error("google-generativeai library not installed.")
+            return None
+
+        try:
+            # Check if ImageGenerationModel is available (newer SDK versions)
+            if hasattr(genai, "ImageGenerationModel"):
+                # Use Imagen 3 model
+                imagen_model = genai.ImageGenerationModel("imagen-3.0-generate-001")
+                
+                # Generate images
+                response = imagen_model.generate_images(
+                    prompt=prompt,
+                    number_of_images=1,
+                    aspect_ratio="1:1",
+                    safety_filter_level="block_only_high",
+                    person_generation="allow_adult",
+                )
+                
+                if response.images:
+                    # Helper to convert PIL Image to bytes
+                    import io
+                    img_byte_arr = io.BytesIO()
+                    response.images[0].save(img_byte_arr, format='PNG')
+                    return img_byte_arr.getvalue()
+            else:
+                logger.warning("Google ImageGenerationModel not found in installed SDK version.")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Google AI Image Generation Failed: {e}")
+            return None
